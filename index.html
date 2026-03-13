@@ -3,77 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Language Translation Interface</title>
+    <title>Transcription & Translation System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
-        :root { --primary: #2563eb; --bg: #f8fafc; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; }
-        body { font-family: system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; }
+        :root { --primary: #2563eb; --bg: #f1f5f9; --border: #e2e8f0; --danger: #ef4444; --success: #10b981; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         
+        /* Layout Structure */
+        .container { display: flex; width: 100%; height: 100%; }
         .input-panel { width: 420px; padding: 25px; background: white; border-right: 1px solid var(--border); display: flex; flex-direction: column; gap: 12px; box-shadow: 2px 0 10px rgba(0,0,0,0.05); }
         .output-panel { flex-grow: 1; padding: 25px; overflow-y: auto; }
 
-        label { font-size: 0.75rem; font-weight: bold; color: #64748b; letter-spacing: 0.05rem; }
-        select, textarea, input { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.9rem; }
-        textarea { flex-grow: 1; font-family: "Courier New", monospace; resize: none; line-height: 1.5; }
+        /* Form Elements */
+        h2 { font-size: 1.1rem; margin: 0; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05rem; }
+        label { font-size: 0.75rem; font-weight: 700; color: #64748b; margin-top: 5px; }
+        select, textarea, input { width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.95rem; box-sizing: border-box; }
+        textarea { flex-grow: 1; resize: none; font-family: "Courier New", monospace; line-height: 1.6; }
         
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        button { padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; color: white; transition: opacity 0.2s; }
-        button:hover { opacity: 0.9; }
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        button { padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: transform 0.1s; }
+        button:active { transform: scale(0.98); }
         
-        #processBtn { background: var(--primary); grid-column: span 2; font-size: 1rem; }
-        #downloadBtn { background: var(--success); display: none; } 
-        #clearBtn { background: var(--danger); }
+        #processBtn { background: var(--primary); color: white; grid-column: span 2; }
+        #clearBtn { background: var(--danger); color: white; }
+        #downloadBtn { background: var(--success); color: white; display: none; }
 
-        table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--border); margin-top: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        th, td { padding: 14px; border: 1px solid var(--border); vertical-align: top; }
-        th { background: #f1f5f9; text-align: left; color: #475569; }
+        /* Table Design */
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; border: 1px solid var(--border); margin-top: 10px; }
+        th, td { padding: 15px; border: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+        th { background: #f8fafc; color: #475569; font-weight: 600; text-align: left; }
         
-        .rtl { direction: rtl; text-align: right; font-family: 'Arial', sans-serif; font-size: 1.1rem; }
-        .ltr { direction: ltr; text-align: left; }
-        .loading { text-align: center; color: #94a3b8; margin-top: 50px; font-style: italic; }
+        .rtl { direction: rtl !important; text-align: right !important; font-family: "Arial", sans-serif; font-size: 1.1rem; }
+        .ltr { direction: ltr !important; text-align: left !important; }
+        .loading { text-align: center; color: #64748b; padding: 50px; font-style: italic; }
+        .error-box { background: #fee2e2; color: #b91c1c; padding: 15px; border-radius: 8px; border: 1px solid #fecaca; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-<div class="input-panel">
-    <h2 style="margin:0 0 10px 0; color:var(--primary);">Translator Interface</h2>
-    
-    <label>SOURCE LANGUAGE</label>
-    <select id="langSelect">
-        <option value="Italian">Italian</option>
-        <option value="Hebrew">Hebrew</option>
-        <option value="Russian">Russian</option>
-        <option value="Armenian">Armenian</option>
-        <option value="French">French</option>
-        <option value="Ukrainian">Ukrainian</option>
-        <option value="Greek">Greek</option>
-        <option value="Albanian">Albanian</option>
-        <option value="Bosnian">Bosnian</option>
-        <option value="Croatian">Croatian</option>
-        <option value="Serbian">Serbian</option>
-        <option value="Arabic">Arabic</option>
-        <option value="Bulgarian">Bulgarian</option>
-        <option value="German">German</option>
-        <option value="Uzbek">Uzbek</option>
-        <option value="Tajik">Tajik</option>
-    </select>
+<div class="container">
+    <div class="input-panel">
+        <h2>Control Panel</h2>
+        
+        <label>TARGET LANGUAGE</label>
+        <select id="langSelect">
+            <option value="Italian">Italian</option>
+            <option value="Hebrew">Hebrew</option>
+            <option value="Russian">Russian</option>
+            <option value="Armenian">Armenian</option>
+            <option value="French">French</option>
+            <option value="Ukrainian">Ukrainian</option>
+            <option value="Greek">Greek</option>
+            <option value="Albanian">Albanian</option>
+            <option value="Bosnian">Bosnian</option>
+            <option value="Croatian">Croatian</option>
+            <option value="Serbian">Serbian</option>
+            <option value="Arabic">Arabic</option>
+            <option value="Bulgarian">Bulgarian</option>
+            <option value="German">German</option>
+            <option value="Uzbek">Uzbek</option>
+            <option value="Tajik">Tajik</option>
+        </select>
 
-    <label>GEMINI API KEY</label>
-    <input type="password" id="apiKey" placeholder="Enter API Key...">
+        <label>GEMINI API KEY</label>
+        <input type="password" id="apiKey" placeholder="Paste your API key here">
 
-    <label>TRANSCRIPT CONTENT</label>
-    <textarea id="rawInput" placeholder="Paste transcript with timecodes here..."></textarea>
-    
-    <div class="btn-group">
-        <button id="processBtn">Process & Translate (Enter)</button>
-        <button id="clearBtn">Clear All</button>
-        <button id="downloadBtn">Download Word</button>
+        <label>RAW TRANSCRIPT</label>
+        <textarea id="rawInput" placeholder="Paste content with timecodes..."></textarea>
+        
+        <div class="btn-group">
+            <button id="processBtn">Process & Translate (Enter)</button>
+            <button id="clearBtn">Clear All</button>
+            <button id="downloadBtn">Download Word</button>
+        </div>
     </div>
-</div>
 
-<div class="output-panel" id="outputArea">
-    <div id="tableContainer">
-        <p class="loading">Ready for input. Paste your transcript and press Enter.</p>
+    <div class="output-panel" id="outputArea">
+        <h2>Live Table Output</h2>
+        <div id="tableContainer">
+            <p class="loading">Interface ready. Paste content and press Enter.</p>
+        </div>
     </div>
 </div>
 
@@ -83,79 +92,91 @@
     const clearBtn = document.getElementById('clearBtn');
     const container = document.getElementById('tableContainer');
 
-    // 1. Process Logic
+    // Handle Enter Key
+    document.getElementById('rawInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            btn.click();
+        }
+    });
+
+    // Clear All Function
+    clearBtn.addEventListener('click', () => {
+        if (confirm("Clear all data and start over?")) {
+            document.getElementById('rawInput').value = "";
+            document.getElementById('apiKey').value = "";
+            container.innerHTML = '<p class="loading">Interface ready.</p>';
+            dlBtn.style.display = 'none';
+        }
+    });
+
     btn.addEventListener('click', async () => {
         const rawContent = document.getElementById('rawInput').value;
         const lang = document.getElementById('langSelect').value;
-        const apiKey = document.getElementById('apiKey').value;
+        const key = document.getElementById('apiKey').value;
         
-        if (!rawContent || !apiKey) return alert("Please provide both the transcript and your API key.");
+        if (!rawContent || !key) return alert("Please provide both content and an API key.");
 
-        container.innerHTML = "<p class='loading'>AI is processing your rules and translating... Please wait.</p>";
+        container.innerHTML = '<p class="loading">AI is translating. This usually takes 5-10 seconds...</p>';
 
-        // Pre-Process (Rule: Remove Timecodes & 1-9 to Words)
+        // Rules: Remove timecodes and format 1-9
         let cleaned = rawContent.replace(/\[?\d{1,2}:\d{2}(:\d{2})?\]?/g, "");
         const numWords = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
         cleaned = cleaned.replace(/\b[1-9]\b/g, (m) => numWords[m]);
 
-        const prompt = `Translate this ${lang}/English mix. Output ONLY an HTML table. 
-        Cols: Speaker, ${lang}/English, English Translation. 
-        In the English Translation column, you MUST bold every word that was originally English in the middle column.
-        Use // for speaker interruptions. Use ... for thought gaps (capitalize the following word).
-        Numbers 1-9 must be words, 10+ figures. No timecodes. No summaries.
-        Content: ${cleaned}`;
+        const prompt = `Task: Translate a mix of ${lang} and English.
+        Output ONLY a valid HTML table with these columns:
+        1. Speaker
+        2. ${lang}/English Mix (Original)
+        3. English Translation (Bold all words that were originally English in Col 2).
+        
+        Strict Rules:
+        - Use // for interruptions.
+        - Use ... for thought gaps.
+        - 1-9 as words, 10+ as figures.
+        - No summaries, no timecodes.
+        - No conversational filler in your response.
+        
+        Content:
+        ${cleaned}`;
 
         try {
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
             });
 
             const data = await response.json();
-            const aiResult = data.candidates[0].content.parts[0].text.replace(/```html|```/g, "");
+
+            if (data.error) throw new Error(data.error.message);
+            if (!data.candidates || data.candidates.length === 0) throw new Error("The AI didn't return a result. Check your transcript for sensitive content.");
+
+            let aiResult = data.candidates[0].content.parts[0].text;
+            // Clean markdown tags if the AI includes them
+            aiResult = aiResult.replace(/```html|```/g, "").trim();
             
             container.innerHTML = aiResult;
-            
-            // Apply RTL to second column if Hebrew or Arabic
+
+            // Apply directionality (RTL for Hebrew/Arabic)
             const isRTL = ["Hebrew", "Arabic"].includes(lang);
-            document.querySelectorAll("td:nth-child(2)").forEach(td => {
-                if(isRTL) td.classList.add("rtl");
+            document.querySelectorAll("#tableContainer td:nth-child(2)").forEach(td => {
+                td.className = isRTL ? "rtl" : "ltr";
             });
 
             dlBtn.style.display = "block";
-        } catch (e) {
-            container.innerHTML = "<p style='color:red;'>Error: Check your API key or connection. Details: " + e.message + "</p>";
+        } catch (error) {
+            container.innerHTML = `<div class="error-box"><strong>Error:</strong> ${error.message}</div>`;
         }
     });
 
-    // 2. Word Download Logic
+    // Word Download Logic
     dlBtn.addEventListener('click', () => {
         const tableHtml = container.innerHTML;
-        const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Translation Export</title><style>table { border-collapse: collapse; width: 100%; } td, th { border: 1px solid black; padding: 5px; }</style></head><body>";
+        const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Translation</title><style>table { border: 1px solid black; border-collapse: collapse; width: 100%; } td, th { border: 1px solid black; padding: 8px; }</style></head><body>";
         const footer = "</body></html>";
-        const sourceHTML = header + tableHtml + footer;
-        
-        const blob = new Blob(['\ufeff', sourceHTML], { type: 'application/msword' });
+        const blob = new Blob(['\ufeff', header + tableHtml + footer], { type: 'application/msword' });
         saveAs(blob, "translation_export.doc");
-    });
-
-    // 3. Clear Function
-    clearBtn.addEventListener('click', () => {
-        if(confirm("Are you sure you want to clear everything?")) {
-            document.getElementById('rawInput').value = "";
-            document.getElementById('apiKey').value = "";
-            container.innerHTML = "<p class='loading'>Ready for input. Paste your transcript and press Enter.</p>";
-            dlBtn.style.display = "none";
-        }
-    });
-
-    // Enter Key shortcut
-    document.getElementById('rawInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) { 
-            e.preventDefault(); 
-            btn.click(); 
-        }
     });
 </script>
 
