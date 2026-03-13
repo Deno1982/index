@@ -55,7 +55,7 @@
         <label>GEMINI API KEY</label>
         <input type="password" id="apiKey" placeholder="Paste your API key here">
         <label>RAW TRANSCRIPT</label>
-        <textarea id="rawInput" placeholder="Paste content with timecodes..."></textarea>
+        <textarea id="rawInput" placeholder="Paste content here..."></textarea>
         <div class="btn-group">
             <button id="processBtn">Process & Translate (Enter)</button>
             <button id="clearBtn">Clear All</button>
@@ -65,7 +65,7 @@
     <div class="output-panel" id="outputArea">
         <h2>Live Table Output</h2>
         <div id="tableContainer">
-            <p class="loading">Interface ready. Paste content and press Enter.</p>
+            <p class="loading">Ready. Paste content and press Enter.</p>
         </div>
     </div>
 </div>
@@ -84,10 +84,10 @@
     });
 
     clearBtn.addEventListener('click', () => {
-        if (confirm("Clear all data and start over?")) {
+        if (confirm("Clear all data?")) {
             document.getElementById('rawInput').value = "";
             document.getElementById('apiKey').value = "";
-            container.innerHTML = '<p class="loading">Interface ready.</p>';
+            container.innerHTML = '<p class="loading">Ready.</p>';
             dlBtn.style.display = 'none';
         }
     });
@@ -97,46 +97,37 @@
         const lang = document.getElementById('langSelect').value;
         const key = document.getElementById('apiKey').value;
         
-        if (!rawContent || !key) return alert("Please provide both content and an API key.");
+        if (!rawContent || !key) return alert("Please provide text and API key.");
 
-        container.innerHTML = '<p class="loading">AI is translating using Gemini 1.5 Flash...</p>';
+        container.innerHTML = '<p class="loading">AI is working...</p>';
 
         let cleaned = rawContent.replace(/\[?\d{1,2}:\d{2}(:\d{2})?\]?/g, "");
         const numWords = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
         cleaned = cleaned.replace(/\b[1-9]\b/g, (m) => numWords[m]);
 
-        const prompt = `Task: Translate a mix of ${lang} and English.
-        Output ONLY a valid HTML table with these columns:
-        1. Speaker
-        2. ${lang}/English Mix (Original)
-        3. English Translation (Bold all words that were originally English in Col 2).
-        Strict Rules:
-        - Use // for interruptions.
-        - Use ... for thought gaps.
-        - 1-9 as words, 10+ as figures.
-        - No summaries, no timecodes.
-        Content:
-        ${cleaned}`;
+        const promptText = `Translate this ${lang}/English mix. Output ONLY a valid HTML table. 
+        Cols: Speaker, ${lang}/English Mix (Original), English Translation. 
+        In Col 3, bold any word that was originally English. 1-9 as words. Use // for interruptions. Use ... for gaps. 
+        Content: ${cleaned}`;
 
-        // Updated API URL to 'v1' and standard model name
-        const apiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`;
+        // Using the most widely compatible endpoint and model string
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
 
         try {
-            const response = await fetch(apiUrl, {
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: promptText }] }]
+                })
             });
 
             const data = await response.json();
 
             if (data.error) throw new Error(`${data.error.code}: ${data.error.message}`);
-            if (!data.candidates || data.candidates.length === 0) throw new Error("No candidates returned. Safety filters might have blocked the response.");
-
-            let aiResult = data.candidates[0].content.parts[0].text;
-            aiResult = aiResult.replace(/```html|```/g, "").trim();
             
-            container.innerHTML = aiResult;
+            const resultText = data.candidates[0].content.parts[0].text;
+            container.innerHTML = resultText.replace(/```html|```/g, "").trim();
 
             const isRTL = ["Hebrew", "Arabic"].includes(lang);
             document.querySelectorAll("#tableContainer td:nth-child(2)").forEach(td => {
@@ -145,7 +136,7 @@
 
             dlBtn.style.display = "block";
         } catch (error) {
-            container.innerHTML = `<div class="error-box"><strong>Connection Error:</strong> ${error.message}<br><br>Tip: Ensure your API key is correct and you have enabled the Generative Language API in Google AI Studio.</div>`;
+            container.innerHTML = `<div class="error-box"><strong>Error:</strong> ${error.message}</div>`;
         }
     });
 
@@ -154,7 +145,7 @@
         const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Translation</title><style>table { border: 1px solid black; border-collapse: collapse; width: 100%; } td, th { border: 1px solid black; padding: 8px; }</style></head><body>";
         const footer = "</body></html>";
         const blob = new Blob(['\ufeff', header + tableHtml + footer], { type: 'application/msword' });
-        saveAs(blob, "translation_export.doc");
+        saveAs(blob, "translation.doc");
     });
 </script>
 
