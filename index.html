@@ -25,7 +25,7 @@
         .rtl { direction: rtl !important; text-align: right !important; font-family: "Arial", sans-serif; font-size: 1.1rem; }
         .ltr { direction: ltr !important; text-align: left !important; }
         .loading { text-align: center; color: #64748b; padding: 50px; font-style: italic; }
-        .error-box { background: #fee2e2; color: #b91c1c; padding: 15px; border-radius: 8px; border: 1px solid #fecaca; margin-top: 10px; font-size: 0.9rem; }
+        .error-box { background: #fee2e2; color: #b91c1c; padding: 15px; border-radius: 8px; border: 1px solid #fecaca; margin-top: 10px; font-size: 0.9rem; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -99,7 +99,7 @@
         
         if (!rawContent || !key) return alert("Please provide text and API key.");
 
-        container.innerHTML = '<p class="loading">AI is working...</p>';
+        container.innerHTML = '<p class="loading">Contacting AI...</p>';
 
         let cleaned = rawContent.replace(/\[?\d{1,2}:\d{2}(:\d{2})?\]?/g, "");
         const numWords = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
@@ -110,8 +110,8 @@
         In Col 3, bold any word that was originally English. 1-9 as words. Use // for interruptions. Use ... for gaps. 
         Content: ${cleaned}`;
 
-        // Using the most widely compatible endpoint and model string
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        // UPDATED ENDPOINT: v1 and gemini-1.5-flash (Standard Stable Model)
+        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`;
 
         try {
             const response = await fetch(url, {
@@ -124,21 +124,45 @@
 
             const data = await response.json();
 
-            if (data.error) throw new Error(`${data.error.code}: ${data.error.message}`);
+            if (data.error) {
+                // If it still fails with 404, we try v1beta as an automatic fallback
+                if (data.error.code === 404) {
+                   return retryWithBeta(key, promptText, lang);
+                }
+                throw new Error(`${data.error.code}: ${data.error.message}`);
+            }
             
-            const resultText = data.candidates[0].content.parts[0].text;
-            container.innerHTML = resultText.replace(/```html|```/g, "").trim();
-
-            const isRTL = ["Hebrew", "Arabic"].includes(lang);
-            document.querySelectorAll("#tableContainer td:nth-child(2)").forEach(td => {
-                td.className = isRTL ? "rtl" : "ltr";
-            });
-
-            dlBtn.style.display = "block";
+            displayResult(data.candidates[0].content.parts[0].text, lang);
         } catch (error) {
             container.innerHTML = `<div class="error-box"><strong>Error:</strong> ${error.message}</div>`;
         }
     });
+
+    async function retryWithBeta(key, promptText, lang) {
+        container.innerHTML = '<p class="loading">Retrying with legacy endpoint...</p>';
+        const betaUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+        try {
+            const response = await fetch(betaUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
+            });
+            const data = await response.json();
+            if (data.error) throw new Error(data.error.message);
+            displayResult(data.candidates[0].content.parts[0].text, lang);
+        } catch (e) {
+            container.innerHTML = `<div class="error-box"><strong>Fatal 404:</strong> The model 'gemini-1.5-flash' was not found on v1 or v1beta. Please verify your API key is from AI Studio and you have access to Gemini 1.5 Flash.</div>`;
+        }
+    }
+
+    function displayResult(aiResult, lang) {
+        container.innerHTML = aiResult.replace(/```html|```/g, "").trim();
+        const isRTL = ["Hebrew", "Arabic"].includes(lang);
+        document.querySelectorAll("#tableContainer td:nth-child(2)").forEach(td => {
+            td.className = isRTL ? "rtl" : "ltr";
+        });
+        dlBtn.style.display = "block";
+    }
 
     dlBtn.addEventListener('click', () => {
         const tableHtml = container.innerHTML;
